@@ -1,0 +1,6 @@
+ThirdParty/
+weights/
+drafts/
+runs/
+.pytest_cache/
+__pycache__/

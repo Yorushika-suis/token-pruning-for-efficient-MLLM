@@ -1,7 +1,0 @@
-redaccel 0.12.1+0.gdd54dab.dirty has requirement huggingface_hub[hf_transfer]>=1.0.0, but you have huggingface-hub 0.36.2.
-redaccel 0.12.1+0.gdd54dab.dirty has requirement transformers==5.3.0, but you have transformers 4.57.3.
-opentelemetry-exporter-otlp-proto-grpc 1.40.0 has requirement grpcio<2.0.0,>=1.63.2; python_version < "3.13", but you have grpcio 1.62.1.
-opencv-python-headless 4.13.0.92 has requirement numpy>=2; python_version >= "3.9", but you have numpy 1.26.4.
-cupy-cuda12x 14.0.1 has requirement numpy<2.6,>=2.0, but you have numpy 1.26.4.
-grpcio-reflection 1.78.0 has requirement grpcio>=1.78.0, but you have grpcio 1.62.1.
-decord 0.6.0 is not supported on this platform
