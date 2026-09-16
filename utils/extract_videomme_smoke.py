@@ -93,9 +93,19 @@ def fetch_one(entry: dict, dest_dir: Path) -> tuple[str, int, bool]:
 
 def main(argv: list[str] | None = None) -> int:
     os.environ.setdefault("HF_HOME", str(ROOT / "weights"))
-    ids = list(argv or sys.argv[1:] or DEFAULT_IDS)
+    args = list(argv if argv is not None else sys.argv[1:])
     entries = json.loads(INDEX_PATH.read_text())
     by_stem = {Path(e["name"]).stem: e for e in entries}
+    if args == ["--all"] or (len(args) == 1 and args[0] == "--all"):
+        ids = list(by_stem)
+    elif len(args) == 2 and args[0] == "--from-file":
+        ids = [
+            line.strip()
+            for line in Path(args[1]).read_text().splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+    else:
+        ids = args or list(DEFAULT_IDS)
     missing = [i for i in ids if i not in by_stem]
     if missing:
         raise SystemExit(f"videoIDs not in zip index: {missing}")
