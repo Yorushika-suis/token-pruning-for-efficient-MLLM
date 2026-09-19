@@ -2,5 +2,7 @@ ThirdParty/
 weights/
 drafts/
 runs/
+analyse/out/
 .pytest_cache/
 __pycache__/
+.vscode/

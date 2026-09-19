@@ -478,7 +478,24 @@ python $ROOT/scripts/repro/smoke_visionzip.py
 ```
 
 确认视觉 token 约为 64，而不是 576。`llava` env 缺 `protobuf` 时 LlamaTokenizer 会在加载时报错。
-- 全量：沿用 LLaVA 的 GQA / MME / POPE 脚本，或 lmms-eval 同名 task。预期见表 0。Avg 94.0% 是相对 vanilla LLaVA-1.5-7B，需要一份未 wrap 的对照 run。
+
+- 全量推理 + 官方打分（GQA Accuracy / MME Perception+Cognition / POPE F1）：
+
+```bash
+# 先备好评测数据（含打分资产）
+bash $ROOT/scripts/repro/download_visionzip_eval_data.sh
+
+# 8 卡推理；结束后自动写 $RUN_DIR/metrics/{gqa,mme,pope,summary}.json
+bash $ROOT/scripts/repro/full_visionzip_llava15.sh
+
+# 仅对已有 merge.jsonl 打分（不重跑推理）
+SCORE_ONLY=1 bash $ROOT/scripts/repro/full_visionzip_llava15.sh
+# 或：
+python $ROOT/scripts/repro/score_visionzip.py \
+  --run-dir $ROOT/runs/visionzip/full_llava15_retain64
+```
+
+对齐目标见表 0（GQA 55.1 / MME 1690 / POPE 77.0）。POPE 论文列的是 **mean F1≈77**；本机打分脚本同时报告 Acc 与 F1。Avg 94.0% 是相对 vanilla LLaVA-1.5-7B，需要一份未 wrap 的对照 run。
 
 ### 8.4 Probe 插法
 

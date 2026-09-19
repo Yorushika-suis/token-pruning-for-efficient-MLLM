@@ -20,7 +20,11 @@ def patch() -> None:
     parquet = parquet_path()
     if parquet is None:
         return
-    import datasets
+    try:
+        import datasets
+    except ImportError:
+        # sitecustomize can load under base/conda hooks before the eval env is ready
+        return
 
     original = datasets.load_dataset
     if getattr(original, "_repro_local_videomme", False):

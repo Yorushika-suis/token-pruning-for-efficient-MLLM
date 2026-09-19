@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-export CUDA_HOME="${CUDA_HOME:-/usr/local/cuda-13.0}"
-export PATH="$CUDA_HOME/bin:$PATH"
-export LD_LIBRARY_PATH="${CUDA_HOME}/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-unset CUDA_PATH || true
+# shellcheck disable=SC1091
+source "$ROOT/scripts/repro/cuda_env.sh"
 export HF_HOME="${HF_HOME:-$ROOT/weights}"
 export HF_ENDPOINT="${HF_ENDPOINT:-https://hf-mirror.com}"
 export PYTHONUNBUFFERED=1
@@ -21,6 +19,8 @@ mkdir -p "$RUN_DIR"
 # shellcheck disable=SC1091
 source /opt/miniconda3/etc/profile.d/conda.sh
 conda activate VidCom2
+# shellcheck disable=SC1091
+source "$ROOT/scripts/repro/cuda_env.sh"
 export PYTHONPATH="$ROOT/scripts/repro:$ROOT/ThirdParty/VidCom2${PYTHONPATH:+:$PYTHONPATH}"
 
 cd "$ROOT/ThirdParty/VidCom2"

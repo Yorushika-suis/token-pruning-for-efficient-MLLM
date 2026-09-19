@@ -1,4 +1,4 @@
-"""Range-extract a few Video-MME mp4s into $HF_HOME/videomme/data.
+"""Range-extract Video-MME mp4s into $HF_HOME/videomme/data.
 
 lmms-eval looks for `$HF_HOME/videomme/data/{videoID}.mp4`. Parquet-only
 downloads are not enough. Full zip volumes are ~101 GB; this script uses the
@@ -6,12 +6,14 @@ zhr zip index and HTTP Range on ModelScope.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import struct
 import sys
 import time
 import zlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -91,33 +93,76 @@ def fetch_one(entry: dict, dest_dir: Path) -> tuple[str, int, bool]:
     return stem, len(data), False
 
 
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("ids", nargs="*", help="videoIDs (default: smoke four)")
+    p.add_argument("--all", action="store_true", help="extract every ID in the zip index")
+    p.add_argument("--from-file", type=Path, help="one videoID per line")
+    p.add_argument(
+        "--jobs",
+        type=int,
+        default=8,
+        help="parallel workers (default: 8; I/O-bound Range downloads)",
+    )
+    return p.parse_args(argv)
+
+
 def main(argv: list[str] | None = None) -> int:
     os.environ.setdefault("HF_HOME", str(ROOT / "weights"))
-    args = list(argv if argv is not None else sys.argv[1:])
+    ns = parse_args(argv)
     entries = json.loads(INDEX_PATH.read_text())
     by_stem = {Path(e["name"]).stem: e for e in entries}
-    if args == ["--all"] or (len(args) == 1 and args[0] == "--all"):
+
+    if ns.all:
         ids = list(by_stem)
-    elif len(args) == 2 and args[0] == "--from-file":
+    elif ns.from_file is not None:
         ids = [
             line.strip()
-            for line in Path(args[1]).read_text().splitlines()
+            for line in ns.from_file.read_text().splitlines()
             if line.strip() and not line.strip().startswith("#")
         ]
     else:
-        ids = args or list(DEFAULT_IDS)
+        ids = list(ns.ids) or list(DEFAULT_IDS)
+
     missing = [i for i in ids if i not in by_stem]
     if missing:
         raise SystemExit(f"videoIDs not in zip index: {missing}")
+
     dest = out_dir()
     dest.mkdir(parents=True, exist_ok=True)
+    jobs = max(1, ns.jobs)
     print(f"HF_HOME={hf_home()}", flush=True)
-    print(f"writing {len(ids)} mp4s to {dest}", flush=True)
-    for vid in ids:
-        stem, n, cached = fetch_one(by_stem[vid], dest)
-        tag = "cached" if cached else "wrote"
-        print(f"  {tag} {stem}.mp4 ({n} bytes)", flush=True)
-    return 0
+    print(f"writing {len(ids)} mp4s to {dest} (jobs={jobs})", flush=True)
+
+    ok = 0
+    cached_n = 0
+    wrote_n = 0
+    errors: list[str] = []
+
+    def _work(vid: str) -> tuple[str, int, bool]:
+        return fetch_one(by_stem[vid], dest)
+
+    with ThreadPoolExecutor(max_workers=jobs) as pool:
+        futs = {pool.submit(_work, vid): vid for vid in ids}
+        for fut in as_completed(futs):
+            vid = futs[fut]
+            try:
+                stem, n, cached = fut.result()
+            except Exception as exc:  # noqa: BLE001
+                msg = f"FAIL {vid}: {exc}"
+                errors.append(msg)
+                print(f"  {msg}", flush=True)
+                continue
+            tag = "cached" if cached else "wrote"
+            if cached:
+                cached_n += 1
+            else:
+                wrote_n += 1
+            ok += 1
+            print(f"  {tag} {stem}.mp4 ({n} bytes)  [{ok}/{len(ids)}]", flush=True)
+
+    print(f"done ok={ok} wrote={wrote_n} cached={cached_n} fail={len(errors)}", flush=True)
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":

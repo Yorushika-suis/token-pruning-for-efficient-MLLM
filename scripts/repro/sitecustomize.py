@@ -3,14 +3,21 @@ from __future__ import annotations
 
 import os
 
-import local_videomme
+try:
+    import local_videomme
 
-local_videomme.patch()
+    local_videomme.patch()
+except Exception:
+    # Never break conda activate / unrelated python when PYTHONPATH includes this dir.
+    pass
 
 if os.environ.get("REPRO_PROBE") == "1":
-    import install as _repro_install
+    try:
+        import install as _repro_install
 
-    _repro_install.install_session()
+        _repro_install.install_session()
+    except Exception:
+        pass
 
 
 def _patch_hub_model_name() -> None:
