@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from analyse.paths import CLIP_SNAPSHOT, SIGLIP_SNAPSHOT, VISION_ENCODER
+from analyse.lib.paths import CLIP_SNAPSHOT, SIGLIP_SNAPSHOT, VISION_ENCODER
 
 
 def select_layer_indices(n_layers: int, n_pick: int = 5) -> list[int]:

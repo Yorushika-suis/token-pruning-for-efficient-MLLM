@@ -6,3 +6,6 @@ analyse/out/
 .pytest_cache/
 __pycache__/
 .vscode/
+outputs/
+.env
+decode/output

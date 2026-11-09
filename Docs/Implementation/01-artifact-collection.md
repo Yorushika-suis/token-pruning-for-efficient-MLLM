@@ -40,7 +40,7 @@ V4 把同一原则做成 [`capture.py`](../ThirdParty/zhr/scripts/v4/capture.py)
 
 **函数身份。** 记录被 hook 函数的 `module`、`qualname`、`source_file`、`source_file_sha256`、`first_line`（`capture.identity`）。防止「看起来在跑官方代码、实际绑到了另一份实现」。
 
-**可续跑 journal。** 按 sample 追加一行 `{key, config_hash, ok}`。中断后只跳过 `ok` 且 `config_hash` 仍匹配的项。目录遍历不能当覆盖范围的权威来源（JuiceFS / 多卡写盘会漏或重复）。
+**可续跑。** `REPRO_PROBE=1` 时（默认 `REPRO_RESUME=1`）`LlavaVid.generate_until` 若 `masks/` 里已有该题 NPZ 则跳过推理；新完成的题会把答案写到 `predictions/`。`REPRO_RESUME=0` 则全量重跑。目录遍历不能当覆盖范围的权威来源（JuiceFS / 多卡写盘会漏或重复），但续跑以已落盘的 NPZ 为准。
 
 ### 1.2 明确不照搬
 

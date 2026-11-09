@@ -9,13 +9,13 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from analyse.masks import load_keep, subsample_frames
-from analyse.media import load_show_frames
-from analyse.paths import (
+from analyse.lib.masks import load_keep, subsample_frames
+from analyse.lib.media import load_show_frames
+from analyse.lib.paths import (
     N_SHOW_FRAMES,
     check_dataset_methods,
     mask_path,
@@ -24,7 +24,7 @@ from analyse.paths import (
     parse_mask_dirs,
     parse_methods,
 )
-from analyse.render import montage_grid, overlay_keep, save_png
+from analyse.lib.render import montage_grid, overlay_keep, save_png
 
 
 def visualize(
@@ -50,7 +50,7 @@ def visualize(
         else:
             json_out = out.with_suffix(".json")
     json_out = Path(json_out)
-    from analyse.keys import skip_existing
+    from analyse.lib.keys import skip_existing
 
     if skip_existing(out, force) and skip_existing(json_out, force):
         print(f"skip {key_n} (exists {out})")

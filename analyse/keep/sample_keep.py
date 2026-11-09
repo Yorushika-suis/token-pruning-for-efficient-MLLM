@@ -6,18 +6,18 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from analyse.keys import keep_artifact_paths, resolve_keys, write_keys_manifest
-from analyse.paths import (
+from analyse.lib.keys import keep_artifact_paths, resolve_keys, write_keys_manifest
+from analyse.lib.paths import (
     N_SHOW_FRAMES,
     check_dataset_methods,
     parse_mask_dirs,
     parse_methods,
 )
-from analyse.show_keep import visualize
+from analyse.keep.show_keep import visualize
 
 
 def main(argv: list[str] | None = None) -> int:

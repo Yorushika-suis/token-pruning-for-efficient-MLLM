@@ -10,14 +10,14 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from analyse.keys import keep_artifact_paths, list_keys, resolve_keys, sample_keys, write_keys_manifest
-from analyse.paths import N_SHOW_FRAMES, check_dataset_methods, parse_methods
-from analyse.show_keep import visualize
-from analyse.show_layers import run_one
+from analyse.lib.keys import keep_artifact_paths, list_keys, resolve_keys, sample_keys, write_keys_manifest
+from analyse.lib.paths import N_SHOW_FRAMES, check_dataset_methods, parse_methods
+from analyse.keep.show_keep import visualize
+from analyse.layers.show_layers import run_one
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -71,8 +71,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(f"keys ({len(keys)}) → {txt}")
     print(f"manifest → {js}")
+    print(f"questions → {args.out_dir / 'questions.txt'}")
+    from analyse.lib.paths import normalize_key
+    from analyse.lib.questions import format_question_block, lookup_question
+
     for k in keys:
-        print(f"  --key {k}")
+        kn = normalize_key(k)
+        print(f"  --key {kn}")
+        print(format_question_block(kn, lookup_question(args.dataset, kn)).rstrip())
+        print()
 
     if args.keys_only:
         return 0

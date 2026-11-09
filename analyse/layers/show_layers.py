@@ -9,13 +9,13 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from analyse.masks import load_keep, subsample_frames
-from analyse.media import load_show_frames
-from analyse.paths import (
+from analyse.lib.masks import load_keep, subsample_frames
+from analyse.lib.media import load_show_frames
+from analyse.lib.paths import (
     N_SHOW_FRAMES,
     check_dataset_methods,
     mask_path,
@@ -23,15 +23,15 @@ from analyse.paths import (
     normalize_key,
     parse_methods,
 )
-from analyse.keys import (
+from analyse.lib.keys import (
     layer_json_path,
     layer_png_path,
     resolve_keys,
     skip_existing,
     write_keys_manifest,
 )
-from analyse.render import heatmap_to_rgb, montage_grid, overlay_keep_contour, resize_nearest, save_png
-from analyse.vision_layers import encode_layers
+from analyse.lib.render import heatmap_to_rgb, montage_grid, overlay_keep_contour, resize_nearest, save_png
+from analyse.lib.vision_layers import encode_layers
 
 
 def _layer_montage(

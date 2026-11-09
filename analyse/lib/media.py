@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from analyse.paths import (
+from analyse.lib.paths import (
     N_MODEL_FRAMES,
     N_SHOW_FRAMES,
     llava_eval_root,
@@ -37,10 +37,14 @@ def videomme_mp4(key: str) -> Path:
     return path
 
 
+def load_videomme_model_frames(key: str, n_model: int = N_MODEL_FRAMES) -> list[np.ndarray]:
+    """64 frames used by force_sample eval (linspace over the mp4)."""
+    return _read_uniform_frames(videomme_mp4(key), n_model)
+
+
 def load_videomme_frames(key: str, n_model: int = N_MODEL_FRAMES, n_show: int = N_SHOW_FRAMES) -> tuple[list[np.ndarray], np.ndarray]:
     """force_sample 64 frames (linspace over the mp4), then uniformly keep n_show of those."""
-    path = videomme_mp4(key)
-    all64 = _read_uniform_frames(path, n_model)
+    all64 = load_videomme_model_frames(key, n_model=n_model)
     show_idx = uniform_indices(len(all64), n_show)
     return [all64[int(i)] for i in show_idx], show_idx
 

@@ -1,0 +1,31 @@
+{
+  "description": "ConvBench dialogs excluded from glm-5.2 scoring. They are omitted from both the numerator and the denominator. Future runs of score_convbench.py skip them and do not call the judge.",
+  "source": "Base max_new_tokens=2048 generation, judge max_tokens=8192, 2026-09-30",
+  "excluded_from_denominator": true,
+  "cases": [
+    {
+      "convbench_id": 260,
+      "reason": "Third-turn and overall judge texts looped and contained no parseable A/B verdict."
+    },
+    {
+      "convbench_id": 355,
+      "reason": "Third-turn judge text ran long and contained no parseable A/B verdict."
+    },
+    {
+      "convbench_id": 408,
+      "reason": "Second-turn and overall judge texts repeated the same fragment and contained no parseable A/B verdict."
+    },
+    {
+      "convbench_id": 418,
+      "reason": "Second-turn judge text repeated zeros and contained no parseable A/B verdict."
+    },
+    {
+      "convbench_id": 474,
+      "reason": "Judge returned HTTP 200 with empty content and reasoning_content on all 30 attempts, so the dialog has no saved verdict."
+    },
+    {
+      "convbench_id": 520,
+      "reason": "Second-turn judge text looped on the same sentence and contained no parseable A/B verdict."
+    }
+  ]
+}

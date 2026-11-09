@@ -25,6 +25,7 @@ class ProbeSession:
         (self.root / "sidecars" / "failures").mkdir(parents=True, exist_ok=True)
         self.journal = self.root / "sidecars" / "journal.jsonl"
         self.features = os.environ.get("REPRO_PROBE_FEATURES") == "1"
+        (self.root / "predictions").mkdir(parents=True, exist_ok=True)
 
     def remember(self, name, original, restore):
         self.identities[name] = identity(original)
@@ -73,6 +74,32 @@ class ProbeSession:
             self.journal,
             {"key": key, "config_hash": None, "ok": False, "error": type(exc).__name__},
         )
+
+    def mask_path_for(self, key: list | None = None) -> Path:
+        from artifacts import mask_filename
+
+        return self.root / "masks" / mask_filename(key if key is not None else current_key())
+
+    def prediction_path_for(self, key: list | None = None) -> Path:
+        from artifacts import mask_filename
+
+        stem = mask_filename(key if key is not None else current_key()).removesuffix(".npz")
+        return self.root / "predictions" / f"{stem}.txt"
+
+    def sample_is_done(self, key: list | None = None) -> bool:
+        path = self.mask_path_for(key)
+        return path.is_file() and path.stat().st_size > 0
+
+    def save_prediction(self, text: str, key: list | None = None) -> None:
+        dest = self.prediction_path_for(key)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(text if isinstance(text, str) else str(text), encoding="utf-8")
+
+    def load_prediction(self, key: list | None = None) -> str | None:
+        dest = self.prediction_path_for(key)
+        if not dest.is_file():
+            return None
+        return dest.read_text(encoding="utf-8")
 
 
 SESSION: ProbeSession | None = None

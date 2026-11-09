@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from analyse.paths import merged_mask_dirs
+from analyse.lib.paths import merged_mask_dirs
 
 
 def list_keys(methods: list[str], dataset: str, mask_dirs: dict[str, Path] | None = None) -> list[str]:
@@ -69,7 +69,16 @@ def write_keys_manifest(
     dest_dir.mkdir(parents=True, exist_ok=True)
     txt = dest_dir / "keys.txt"
     js = dest_dir / "jsons" / "keys.json"
+    from analyse.lib.questions import write_questions
+    from analyse.lib.paths import normalize_key
+
+    keys = [normalize_key(k) for k in keys]
     txt.write_text("\n".join(keys) + "\n", encoding="utf-8")
+    questions: dict = {}
+    try:
+        _, _, questions = write_questions(dest_dir, dataset, keys)
+    except Exception as exc:
+        print(f"warning: could not write question text ({exc})")
     payload = {
         "methods": methods,
         "dataset": dataset,
@@ -77,10 +86,11 @@ def write_keys_manifest(
         "seed": seed,
         "keys": keys,
         "cli_keys": [f"--key {k}" for k in keys],
+        "questions": questions,
         "written_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     js.parent.mkdir(parents=True, exist_ok=True)
-    js.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    js.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return txt, js
 
 
@@ -101,7 +111,7 @@ def skip_existing(path: Path, force: bool) -> bool:
 
 
 def keep_artifact_paths(root: Path, key: str) -> tuple[Path, Path]:
-    from analyse.paths import normalize_key
+    from analyse.lib.paths import normalize_key
 
     pngs, jsons = ensure_pngs_jsons(root)
     stem = normalize_key(key)
@@ -109,14 +119,14 @@ def keep_artifact_paths(root: Path, key: str) -> tuple[Path, Path]:
 
 
 def layer_png_path(root: Path, key: str, method: str) -> Path:
-    from analyse.paths import normalize_key
+    from analyse.lib.paths import normalize_key
 
     pngs, _ = ensure_pngs_jsons(root)
     return pngs / f"{normalize_key(key)}_{method}_layers.png"
 
 
 def layer_json_path(root: Path, key: str) -> Path:
-    from analyse.paths import normalize_key
+    from analyse.lib.paths import normalize_key
 
     _, jsons = ensure_pngs_jsons(root)
     return jsons / f"{normalize_key(key)}_layers.json"

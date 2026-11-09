@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 METHOD_MASK_DIRS = {
     "fastvid": ROOT / "runs" / "fastvid" / "full_videomme_probe" / "masks",

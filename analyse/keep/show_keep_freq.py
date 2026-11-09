@@ -13,13 +13,13 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from analyse.keys import list_keys, read_keys_file, write_keys_manifest
-from analyse.masks import load_keep
-from analyse.paths import (
+from analyse.lib.keys import list_keys, read_keys_file, write_keys_manifest
+from analyse.lib.masks import load_keep
+from analyse.lib.paths import (
     ROOT as REPO,
     check_dataset_methods,
     mask_path,
@@ -27,7 +27,7 @@ from analyse.paths import (
     parse_mask_dirs,
     parse_methods,
 )
-from analyse.render import heatmap_to_rgb, montage_grid, resize_nearest, save_png
+from analyse.lib.render import heatmap_to_rgb, montage_grid, resize_nearest, save_png
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Full FastVID × LLaVA-Video × Video-MME (optional REPRO_PROBE=1).
+# Resume: with REPRO_PROBE=1 (default REPRO_RESUME=1) generate_until skips samples
+# that already have a mask NPZ. Set REPRO_RESUME=0 to force a full re-run.
 # Usage (from anywhere):
 #   bash scripts/repro/full_fastvid_llava_vid.sh
 #   NUM_GPUS=4 CUDA_VISIBLE_DEVICES=4,5,6,7 bash scripts/repro/full_fastvid_llava_vid.sh
@@ -41,7 +43,9 @@ export EVAL_ARGS="$MODEL_ARGS"
 if [[ "${REPRO_PROBE:-}" == "1" ]]; then
   export REPRO_PROBE_METHOD=fastvid
   export REPRO_PROBE_DIR="${REPRO_PROBE_DIR:-$ROOT/runs/fastvid/full_videomme_probe}"
+  export REPRO_RESUME="${REPRO_RESUME:-1}"
   mkdir -p "$REPRO_PROBE_DIR"
+  echo "probe dir $REPRO_PROBE_DIR  resume=$REPRO_RESUME (skip existing masks)"
 fi
 
 {

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Full VidCom2 × LLaVA-Video × Video-MME (optional REPRO_PROBE=1).
+# Resume: REPRO_PROBE=1 skips samples with an existing mask NPZ (REPRO_RESUME=0 to disable).
 # Usage:
 #   bash scripts/repro/full_vidcom2_llava_vid.sh
 #   NUM_GPUS=8 bash scripts/repro/full_vidcom2_llava_vid.sh
@@ -45,7 +46,9 @@ export EVAL_ARGS="$MODEL_ARGS"
 if [[ "${REPRO_PROBE:-}" == "1" ]]; then
   export REPRO_PROBE_METHOD=vidcom2
   export REPRO_PROBE_DIR="${REPRO_PROBE_DIR:-$ROOT/runs/vidcom2/full_videomme_probe}"
+  export REPRO_RESUME="${REPRO_RESUME:-1}"
   mkdir -p "$REPRO_PROBE_DIR"
+  echo "probe dir $REPRO_PROBE_DIR  resume=$REPRO_RESUME (skip existing masks)"
 fi
 
 {

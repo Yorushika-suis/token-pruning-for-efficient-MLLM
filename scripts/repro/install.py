@@ -16,6 +16,10 @@ def _method() -> str:
     return os.environ.get("REPRO_PROBE_METHOD", "").strip().lower()
 
 
+def _resume_enabled() -> bool:
+    return os.environ.get("REPRO_RESUME", "1").strip() not in {"0", "false", "False", "no"}
+
+
 def _patch_generate_until(mod) -> None:
     from context import clear_sample, set_sample
     from session import session
@@ -27,8 +31,12 @@ def _patch_generate_until(mod) -> None:
     if getattr(original, "_repro_probe", False):
         return
 
+    stats = {"skip": 0, "run": 0}
+
     def wrapped(self, requests):
         out = []
+        sess = session()
+        resume = _resume_enabled()
         for req in requests:
             contexts, gen_kwargs, doc_to_visual, doc_id, task, split = req.args
             doc = self.task_dict[task][split][doc_id]
@@ -37,7 +45,24 @@ def _patch_generate_until(mod) -> None:
                 question_id=doc.get("question_id"),
             )
             try:
-                out.extend(original(self, [req]))
+                if resume and sess.sample_is_done():
+                    stats["skip"] += 1
+                    cached = sess.load_prediction()
+                    if cached is None:
+                        cached = ""
+                    if stats["skip"] <= 3 or stats["skip"] % 100 == 0:
+                        print(
+                            f"resume skip {sess.mask_path_for().stem} "
+                            f"(skip={stats['skip']} run={stats['run']} pred={'yes' if cached else 'empty'})",
+                            flush=True,
+                        )
+                    out.append(cached)
+                    continue
+                res = original(self, [req])
+                stats["run"] += 1
+                out.extend(res)
+                if res:
+                    sess.save_prediction(res[0] if isinstance(res[0], str) else str(res[0]))
             finally:
                 clear_sample()
         return out
