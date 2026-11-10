@@ -141,3 +141,64 @@ PYTHON=$PY_VID python scripts/vla_acl/score_heldout_videomme.py \
 ```
 
 `LIMIT=1` 只跑一条训练样本，用来确认前向，不是分数。`full` 会评全部 2700 题，其中包含训练视频。
+
+## 5. B200 / LLaVA-Video-178K 训练
+
+本节是 yotta-hal-b200-19 上的路径与命令，和上文 4090 / Video-MME-180 训练路径不同，不要混用环境或权重目录约定。
+
+本机 8× B200，toolkit `/usr/local/cuda-13.0`。视频环境是 `/data0/lyx/miniconda3/envs/vla-acl-video`，`torch==2.14.1+cu130`。不要装 4090 文档里的 `cu121` 轮子。`ThirdParty/FastVID` 钉 `a40a109cb8df20e8c2c17c6850f8269717369990`。
+
+### 路径
+
+数据在 `data/extracted/`，通过 `weights/` 下的符号链接接到脚本默认位置：
+
+| 用途 | 链接 | 目标 |
+| --- | --- | --- |
+| HF hub（LLaVA-Video、SigLIP） | `weights/hub` | `/data0/lyx/huggingface/hub` |
+| Video-MME 标注 | `weights/hub/datasets--lmms-lab--Video-MME/{refs,snapshots}` | `data/extracted/{refs,snapshots}` |
+| Video-MME 视频 | `weights/videomme/data` | `data/extracted/data` |
+| 178K 标注 / yaml / 视频 | `weights/datasets/llava-video-178k/{raw,sample,videos}` | `data/extracted/{raw,sample,videos}` |
+
+`HF_HOME=$ROOT/weights`。训练走 178K + `NO_FRAME_CACHE=1`（decord 在线读 mp4）。评测前先把 Video-MME 解成 `decode/output/<id>.npz`：
+
+```bash
+export ROOT=/data0/lyx/token-pruning-for-efficient-MLLM
+export PYTHON=/data0/lyx/miniconda3/envs/vla-acl-video/bin/python
+export HF_HOME=$ROOT/weights
+
+$PYTHON scripts/vla_acl/split_videomme.py
+$PYTHON decode/scripts/decode_frames.py --which all
+```
+
+### 训练与 held-out 评测
+
+空闲卡优先 1 / 3 / 6 / 7。两个 retention 各训一个 scorer，不能混用。
+
+B200（约 183 GiB）上 `LIMIT=BATCH_SIZE` 冒烟峰值：
+
+| `BATCH_SIZE` | 结果 | 峰值显存 |
+| ---: | --- | ---: |
+| 2 / 4 | OK | 远低于上限 |
+| 8 | OK | ≈160 GiB |
+| 16 / 32 | OOM | — |
+
+正式跑建议 **`BATCH_SIZE=4`**（稳）；要吞吐可试 **8**，留余量不够就降回 4。
+
+```bash
+export ROOT=/data0/lyx/token-pruning-for-efficient-MLLM
+export PYTHON=/data0/lyx/miniconda3/envs/vla-acl-video/bin/python
+export HF_HOME=$ROOT/weights
+export DATA_YAML=$ROOT/weights/datasets/llava-video-178k/sample/output_rnd05.yaml
+export JSON_ROOT=$ROOT/weights/datasets/llava-video-178k/raw
+export VIDEO_ROOT=$ROOT/weights/datasets/llava-video-178k/videos
+export NO_FRAME_CACHE=1 BATCH_SIZE=4 FRAMES=64
+
+# 等 decode/output 凑齐 900 个 npz 后再评测
+CUDA_VISIBLE_DEVICES=1 RETENTION=0.10 bash scripts/vla_acl/run_train_video.sh
+CUDA_VISIBLE_DEVICES=3 RETENTION=0.25 bash scripts/vla_acl/run_train_video.sh
+
+CUDA_VISIBLE_DEVICES=1 RETENTION=0.10 bash scripts/vla_acl/run_videomme.sh heldout
+CUDA_VISIBLE_DEVICES=3 RETENTION=0.25 bash scripts/vla_acl/run_videomme.sh heldout
+```
+
+冒烟：`LIMIT=$BATCH_SIZE`。scorer 在 `runs/vla-acl-video/train/r010/` 与 `r025/`。

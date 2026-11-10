@@ -9,3 +9,6 @@ __pycache__/
 outputs/
 .env
 decode/output
+decode/output_178k
+decode/decode_all.log
+data/

@@ -2,12 +2,26 @@
 
 Online decoding uses the same np.linspace indices as FlexSelect / FastVID
 with force_sample=True.
+
+178K caches use the path relative to --video-root (no suffix) so stems like
+split_5.mp4 under different parents do not collide. Video-MME keeps flat ids.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
 import numpy as np
+
+
+def cache_rel_key(video: Path, video_root: Path | None) -> str:
+    """Relative path without suffix under video_root, else the file stem."""
+    if video_root is not None:
+        try:
+            rel = video.resolve().relative_to(video_root.resolve())
+            return str(rel.with_suffix(""))
+        except ValueError:
+            pass
+    return video.stem
 
 
 def load_cached_frames(cache_dir: Path, video_id: str, n_frames: int) -> np.ndarray:
@@ -38,7 +52,12 @@ def decode_uniform_frames(video: Path, n_frames: int) -> np.ndarray:
     return frames
 
 
-def load_training_frames(video: Path, n_frames: int, cache_dir: Path | None) -> np.ndarray:
+def load_training_frames(
+    video: Path,
+    n_frames: int,
+    cache_dir: Path | None,
+    video_root: Path | None = None,
+) -> np.ndarray:
     if cache_dir is not None:
-        return load_cached_frames(cache_dir, video.stem, n_frames)
+        return load_cached_frames(cache_dir, cache_rel_key(video, video_root), n_frames)
     return decode_uniform_frames(video, n_frames)

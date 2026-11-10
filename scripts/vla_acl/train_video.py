@@ -37,7 +37,7 @@ from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX, IGNORE_INDEX
 from llava.conversation import conv_templates  # noqa: E402
 from llava.mm_utils import tokenizer_image_token  # noqa: E402
 from llava.model.builder import load_pretrained_model  # noqa: E402
-from frames import load_training_frames  # noqa: E402
+from frames import cache_rel_key, load_training_frames  # noqa: E402
 from hook_video import _patch_fastvid, pool_siglip  # noqa: E402
 from scorer import (  # noqa: E402
     PatchScorer,
@@ -257,6 +257,24 @@ def load_examples(args: argparse.Namespace) -> list[dict]:
     return load_questions_videomme(train_ids, args.video_root, args.limit)
 
 
+def filter_examples_with_frame_cache(
+    examples: list[dict],
+    cache_dir: Path,
+    video_root: Path | None,
+) -> list[dict]:
+    """Drop questions whose decode npz is missing (corrupt / never cached)."""
+    kept = []
+    missing = 0
+    for item in examples:
+        key = cache_rel_key(item["video"], video_root)
+        if (cache_dir / f"{key}.npz").is_file():
+            kept.append(item)
+        else:
+            missing += 1
+    print(f"frame-cache keep {len(kept)} drop_missing_cache {missing}", flush=True)
+    return kept
+
+
 def tokenize(tokenizer, question: str, answer: str):
     conv = conv_templates["qwen_1_5"].copy()
     user = DEFAULT_IMAGE_TOKEN + "\n" + question
@@ -417,6 +435,8 @@ def main() -> None:
         raise SystemExit("gt-weight + teacher-weight must be > 0")
     k = patches_per_frame_for(args.retention)
     examples = load_examples(args)
+    if args.frame_cache is not None:
+        examples = filter_examples_with_frame_cache(examples, args.frame_cache, args.video_root)
     if not examples:
         raise SystemExit("no training questions with a local video")
     source = "178k" if args.data_yaml is not None else "videomme"
@@ -508,7 +528,9 @@ def main() -> None:
             kept = []
             for item in batch:
                 try:
-                    clip = load_training_frames(item["video"], args.frames, args.frame_cache)
+                    clip = load_training_frames(
+                        item["video"], args.frames, args.frame_cache, args.video_root
+                    )
                 except Exception as exc:
                     print(f"skip bad video {item['video']}: {exc}", flush=True)
                     continue
