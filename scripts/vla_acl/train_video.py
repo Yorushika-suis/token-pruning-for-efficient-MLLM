@@ -504,16 +504,25 @@ def main() -> None:
             if epoch * len(examples) + start < step:
                 continue
             batch = examples[start : start + args.batch_size]
+            videos = []
+            kept = []
+            for item in batch:
+                try:
+                    clip = load_training_frames(item["video"], args.frames, args.frame_cache)
+                except Exception as exc:
+                    print(f"skip bad video {item['video']}: {exc}", flush=True)
+                    continue
+                clip = processor.preprocess(clip, return_tensors="pt")["pixel_values"]
+                videos.append(clip.to(device=model.device, dtype=model.dtype))
+                kept.append(item)
+            if not kept:
+                continue
+            batch = kept
             encoded = [tokenize(tokenizer, item["question"], item["answer"]) for item in batch]
             input_ids, labels, attention_mask = pad_text(encoded, pad_id)
             input_ids = input_ids.to(model.device)
             labels = labels.to(model.device)
             attention_mask = attention_mask.to(model.device)
-            videos = []
-            for item in batch:
-                clip = load_training_frames(item["video"], args.frames, args.frame_cache)
-                clip = processor.preprocess(clip, return_tensors="pt")["pixel_values"]
-                videos.append(clip.to(device=model.device, dtype=model.dtype))
             pooled_list = []
             projected_list = []
             index_list = []
